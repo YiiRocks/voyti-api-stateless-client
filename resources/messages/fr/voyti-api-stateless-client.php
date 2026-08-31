@@ -26,4 +26,7 @@ return [
     'voyti-api-stateless-client.rbac.name_already_exists' => 'Un élément portant ce nom existe déjà.',
     'voyti-api-stateless-client.rbac.invalid_name' => 'Nom invalide.',
     'voyti-api-stateless-client.rbac.invalid_children' => 'Éléments enfants invalides.',
+    'voyti-api-stateless-client.rbac.user_not_found' => "Un ou plusieurs identifiants d'utilisateur ne correspondent à aucun utilisateur.",
+    'voyti-api-stateless-client.rbac.assignments.updated' => 'Assignations mises à jour.',
+    'voyti-api-stateless-client.rbac.permission_assignment_disabled' => "L'assignation directe de permissions est désactivée. Assignez la permission via un rôle à la place.",
 ];

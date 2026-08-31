@@ -26,4 +26,7 @@ return [
     'voyti-api-stateless-client.rbac.name_already_exists' => 'Элемент с таким именем уже существует.',
     'voyti-api-stateless-client.rbac.invalid_name' => 'Недопустимое имя.',
     'voyti-api-stateless-client.rbac.invalid_children' => 'Недопустимые дочерние элементы.',
+    'voyti-api-stateless-client.rbac.user_not_found' => 'Один или несколько идентификаторов пользователей не соответствуют ни одному пользователю.',
+    'voyti-api-stateless-client.rbac.assignments.updated' => 'Назначения обновлены.',
+    'voyti-api-stateless-client.rbac.permission_assignment_disabled' => 'Прямое назначение разрешений отключено. Назначьте разрешение через роль.',
 ];

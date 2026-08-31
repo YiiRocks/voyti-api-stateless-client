@@ -26,4 +26,7 @@ return [
     'voyti-api-stateless-client.rbac.name_already_exists' => 'Ein Element mit diesem Namen existiert bereits.',
     'voyti-api-stateless-client.rbac.invalid_name' => 'Ungültiger Name.',
     'voyti-api-stateless-client.rbac.invalid_children' => 'Ungültige Unterelemente.',
+    'voyti-api-stateless-client.rbac.user_not_found' => 'Eine oder mehrere Benutzer-IDs stimmen mit keinem Benutzer überein.',
+    'voyti-api-stateless-client.rbac.assignments.updated' => 'Zuweisungen aktualisiert.',
+    'voyti-api-stateless-client.rbac.permission_assignment_disabled' => 'Die direkte Zuweisung von Berechtigungen ist deaktiviert. Weisen Sie die Berechtigung stattdessen über eine Rolle zu.',
 ];

@@ -26,4 +26,7 @@ return [
     'voyti-api-stateless-client.rbac.name_already_exists' => 'Ya existe un elemento con este nombre.',
     'voyti-api-stateless-client.rbac.invalid_name' => 'Nombre no válido.',
     'voyti-api-stateless-client.rbac.invalid_children' => 'Elementos secundarios no válidos.',
+    'voyti-api-stateless-client.rbac.user_not_found' => 'Uno o más ID de usuario no coinciden con ningún usuario.',
+    'voyti-api-stateless-client.rbac.assignments.updated' => 'Asignaciones actualizadas.',
+    'voyti-api-stateless-client.rbac.permission_assignment_disabled' => 'La asignación directa de permisos está deshabilitada. Asigne el permiso a través de un rol en su lugar.',
 ];

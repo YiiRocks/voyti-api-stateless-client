@@ -26,4 +26,7 @@ return [
     'voyti-api-stateless-client.rbac.name_already_exists' => 'Er bestaat al een item met deze naam.',
     'voyti-api-stateless-client.rbac.invalid_name' => 'Ongeldige naam.',
     'voyti-api-stateless-client.rbac.invalid_children' => 'Ongeldige subitems.',
+    'voyti-api-stateless-client.rbac.user_not_found' => 'Een of meer gebruikers-ID\'s komen niet overeen met een gebruiker.',
+    'voyti-api-stateless-client.rbac.assignments.updated' => 'Toewijzingen bijgewerkt.',
+    'voyti-api-stateless-client.rbac.permission_assignment_disabled' => 'Directe toewijzing van rechten is uitgeschakeld. Wijs het recht in plaats daarvan toe via een rol.',
 ];

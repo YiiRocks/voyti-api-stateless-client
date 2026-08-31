@@ -7,6 +7,7 @@ use YiiRocks\Voyti\Api\StatelessClient\Controller\V1\Auth\AuthController;
 use YiiRocks\Voyti\Api\StatelessClient\Controller\V1\Gdpr\GdprController;
 use YiiRocks\Voyti\Api\StatelessClient\Controller\V1\Me\MeController;
 use YiiRocks\Voyti\Api\StatelessClient\Controller\V1\PasswordReset\PasswordResetController;
+use YiiRocks\Voyti\Api\StatelessClient\Controller\V1\Rbac\RbacAssignmentController;
 use YiiRocks\Voyti\Api\StatelessClient\Controller\V1\Rbac\RbacController;
 use YiiRocks\Voyti\Api\StatelessClient\Controller\V1\Registration\RegistrationController;
 use YiiRocks\Voyti\Api\StatelessClient\Controller\V1\Session\SessionsController;
@@ -170,6 +171,12 @@ return [
                         Route::post('')->name('create')->action([RbacController::class, 'create']),
                         Route::patch('/{name}')->name('update')->action([RbacController::class, 'update']),
                         Route::delete('/{name}')->name('delete')->action([RbacController::class, 'delete']),
+                        Group::create('/{name}/assignments')
+                            ->namePrefix('assignments-')
+                            ->routes(
+                                Route::get('')->name('index')->action([RbacAssignmentController::class, 'index']),
+                                Route::put('')->name('update')->action([RbacAssignmentController::class, 'update']),
+                            ),
                     ),
             ],
         ],
