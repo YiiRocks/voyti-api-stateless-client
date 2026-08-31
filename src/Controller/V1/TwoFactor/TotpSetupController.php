@@ -10,6 +10,7 @@ use YiiRocks\Voyti\TwoFactor\Model\UserTwoFactor;
 use YiiRocks\Voyti\TwoFactor\Totp\Service\QrCodeUriGeneratorService;
 use Yiisoft\DataResponse\ResponseFactory\DataResponseFactoryInterface;
 use Yiisoft\Http\Status;
+use Yiisoft\Translator\TranslatorInterface;
 use Yiisoft\User\CurrentUser;
 
 /**
@@ -23,6 +24,7 @@ final readonly class TotpSetupController
         private CurrentUser $currentUser,
         private DataResponseFactoryInterface $responseFactory,
         private QrCodeUriGeneratorService $qrCodeUriGeneratorService,
+        private TranslatorInterface $translator,
     ) {}
 
     public function renew(): ResponseInterface
@@ -30,7 +32,15 @@ final readonly class TotpSetupController
         $user = $this->currentUserOrFail();
 
         if (UserTwoFactor::forUser($user)->isEnabled()) {
-            return $this->responseFactory->createResponse(['error' => 'Two-factor authentication is already enabled.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.two_factor.already_enabled',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         $qrCodeSvg = $this->qrCodeUriGeneratorService->regenerateQrCodeSvg($user);
@@ -46,7 +56,15 @@ final readonly class TotpSetupController
         $user = $this->currentUserOrFail();
 
         if (UserTwoFactor::forUser($user)->isEnabled()) {
-            return $this->responseFactory->createResponse(['error' => 'Two-factor authentication is already enabled.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.two_factor.already_enabled',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         $qrCodeSvg = $this->qrCodeUriGeneratorService->generateQrCodeSvg($user);

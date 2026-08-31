@@ -13,6 +13,7 @@ use YiiRocks\Voyti\TwoFactor\Webauthn\Service\WebauthnService;
 use Yiisoft\DataResponse\ResponseFactory\DataResponseFactoryInterface;
 use Yiisoft\Http\Status;
 use Yiisoft\Input\Http\Attribute\Parameter\Body;
+use Yiisoft\Translator\TranslatorInterface;
 use Yiisoft\User\CurrentUser;
 
 /**
@@ -30,6 +31,7 @@ final readonly class WebauthnEnrollmentController
         private CurrentUser $currentUser,
         private DataResponseFactoryInterface $responseFactory,
         private WebauthnService $webauthnService,
+        private TranslatorInterface $translator,
     ) {}
 
     public function finish(
@@ -43,12 +45,28 @@ final readonly class WebauthnEnrollmentController
         $twoFactor = UserTwoFactor::forUser($user);
 
         if ($twoFactor->isEnabled()) {
-            return $this->responseFactory->createResponse(['error' => 'Two-factor authentication is already enabled.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.two_factor.already_enabled',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         $challenge = $twoFactor->getSecret();
         if ($challenge === null) {
-            return $this->responseFactory->createResponse(['error' => 'No pending WebAuthn registration was found.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.two_factor.webauthn_no_pending_registration',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         $registered = $this->webauthnService->register(
@@ -68,7 +86,10 @@ final readonly class WebauthnEnrollmentController
         $twoFactor->save();
 
         return $this->responseFactory->createResponse(
-            ['message' => 'Two-factor authentication enabled.', 'backupCodes' => $this->backupCodeService->generate($user)],
+            [
+                'message' => $this->translator->translate('voyti-2fa.settings.two_factor_enabled', category: 'voyti-2fa'),
+                'backupCodes' => $this->backupCodeService->generate($user),
+            ],
             Status::CREATED,
         );
     }
@@ -79,7 +100,15 @@ final readonly class WebauthnEnrollmentController
         $twoFactor = UserTwoFactor::forUser($user);
 
         if ($twoFactor->isEnabled()) {
-            return $this->responseFactory->createResponse(['error' => 'Two-factor authentication is already enabled.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.two_factor.already_enabled',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         $challenge = null;

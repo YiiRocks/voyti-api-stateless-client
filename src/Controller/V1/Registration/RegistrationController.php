@@ -41,18 +41,34 @@ final readonly class RegistrationController
         $user = User::findById($id);
 
         if ($user === null || !$this->config->enableEmailConfirmation) {
-            return $this->responseFactory->createResponse(['error' => 'Invalid confirmation link.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti.registration.invalid_confirmation_link', category: 'voyti')],
+                Status::BAD_REQUEST,
+            );
         }
 
         if ($user->isConfirmed()) {
-            return $this->responseFactory->createResponse(['message' => 'Account already confirmed.']);
+            return $this->responseFactory->createResponse([
+                'message' => $this->translator->translate(
+                    'voyti-api-stateless-client.registration.account_already_confirmed',
+                    category: 'voyti-api-stateless-client',
+                ),
+            ]);
         }
 
         if ($this->confirmationService->confirmWithCode($code, $user)) {
-            return $this->responseFactory->createResponse(['message' => 'Account confirmed.']);
+            return $this->responseFactory->createResponse([
+                'message' => $this->translator->translate(
+                    'voyti-api-stateless-client.registration.account_confirmed',
+                    category: 'voyti-api-stateless-client',
+                ),
+            ]);
         }
 
-        return $this->responseFactory->createResponse(['error' => 'Confirmation link is invalid or expired.'], Status::BAD_REQUEST);
+        return $this->responseFactory->createResponse(
+            ['error' => $this->translator->translate('voyti.registration.confirmation_link_invalid', category: 'voyti')],
+            Status::BAD_REQUEST,
+        );
     }
 
     public function register(
@@ -65,7 +81,10 @@ final readonly class RegistrationController
         string $password = '',
     ): ResponseInterface {
         if (!$this->config->enableRegistration) {
-            return $this->responseFactory->createResponse(['error' => 'Registration is disabled.'], Status::FORBIDDEN);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti.registration.disabled', category: 'voyti')],
+                Status::FORBIDDEN,
+            );
         }
 
         $result = $this->registerService->run(
@@ -98,7 +117,10 @@ final readonly class RegistrationController
         string $email = '',
     ): ResponseInterface {
         if (!$this->config->enableEmailConfirmation) {
-            return $this->responseFactory->createResponse(['error' => 'Email confirmation is disabled.'], Status::FORBIDDEN);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti.registration.email_confirmation_disabled', category: 'voyti')],
+                Status::FORBIDDEN,
+            );
         }
 
         $user = User::findByEmail($email);
@@ -108,6 +130,11 @@ final readonly class RegistrationController
 
         // Always the same response whether the address exists or is already confirmed, so this
         // endpoint can't be used to enumerate accounts.
-        return $this->responseFactory->createResponse(['message' => 'Confirmation email sent if the account exists and is unconfirmed.']);
+        return $this->responseFactory->createResponse([
+            'message' => $this->translator->translate(
+                'voyti-api-stateless-client.registration.confirmation_email_sent',
+                category: 'voyti-api-stateless-client',
+            ),
+        ]);
     }
 }

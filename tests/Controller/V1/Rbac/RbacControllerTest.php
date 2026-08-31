@@ -71,7 +71,7 @@ final class RbacControllerTest extends DatabaseTestCase
         // Success, with a child, description, rule, and a multibyte (unicode) name
         $this->addItem($itemType, 'child-item');
         $response = $this->expectResponse(
-            ['name' => 'usér', 'description' => 'An editor', 'message' => 'Item created.'],
+            ['name' => 'usér', 'description' => 'An editor', 'message' => 'Authorization item has been created'],
             Status::CREATED,
         );
         self::assertSame(
@@ -111,12 +111,12 @@ final class RbacControllerTest extends DatabaseTestCase
     public function testDelete(string $itemType): void
     {
         // Not found
-        $response = $this->expectResponse(['error' => 'Not found.'], Status::NOT_FOUND);
+        $response = $this->expectResponse(['error' => 'Authorization item not found'], Status::NOT_FOUND);
         self::assertSame($response, $this->createController()->delete(new ServerRequest('DELETE', '/'), $itemType, 'missing'));
 
         // Success
         $this->addItem($itemType, 'deletable');
-        $response = $this->expectResponse(['message' => 'Item deleted.'], Status::OK);
+        $response = $this->expectResponse(['message' => 'Authorization item has been removed'], Status::OK);
         self::assertSame($response, $this->createController()->delete(new ServerRequest('DELETE', '/'), $itemType, 'deletable'));
         self::assertFalse($this->itemsStorage->exists('deletable'));
         $log = $this->lastAuditLog();
@@ -151,12 +151,12 @@ final class RbacControllerTest extends DatabaseTestCase
         $this->manager->addChild('original', 'stale-child');
 
         // Not found
-        $response = $this->expectResponse(['error' => 'Not found.'], Status::NOT_FOUND);
+        $response = $this->expectResponse(['error' => 'Authorization item not found'], Status::NOT_FOUND);
         self::assertSame($response, $this->createController()->update(new ServerRequest('PATCH', '/'), $itemType, 'missing'));
 
         // Success: rename, change description, attach a child
         $response = $this->expectResponse(
-            ['name' => 'renamed', 'description' => 'New description', 'message' => 'Item updated.'],
+            ['name' => 'renamed', 'description' => 'New description', 'message' => 'Authorization item has been updated'],
             Status::OK,
         );
         self::assertSame(
@@ -182,7 +182,7 @@ final class RbacControllerTest extends DatabaseTestCase
 
         // Setting a rule
         $response = $this->expectResponse(
-            ['name' => 'renamed', 'description' => 'New description', 'message' => 'Item updated.'],
+            ['name' => 'renamed', 'description' => 'New description', 'message' => 'Authorization item has been updated'],
             Status::OK,
         );
         self::assertSame(
@@ -193,7 +193,7 @@ final class RbacControllerTest extends DatabaseTestCase
 
         // Clearing the rule
         $response = $this->expectResponse(
-            ['name' => 'renamed', 'description' => 'New description', 'message' => 'Item updated.'],
+            ['name' => 'renamed', 'description' => 'New description', 'message' => 'Authorization item has been updated'],
             Status::OK,
         );
         self::assertSame(
@@ -244,6 +244,7 @@ final class RbacControllerTest extends DatabaseTestCase
             new ItemsValidator($this->itemsStorage),
             $this->manager,
             $this->responseFactory,
+            $this->createTranslator(),
         );
     }
 

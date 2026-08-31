@@ -13,6 +13,7 @@ use YiiRocks\Voyti\VoytiConfig;
 use Yiisoft\DataResponse\ResponseFactory\DataResponseFactoryInterface;
 use Yiisoft\Http\Status;
 use Yiisoft\Input\Http\Attribute\Parameter\Body;
+use Yiisoft\Translator\TranslatorInterface;
 
 /**
  * Public "forgot password" flow for the SPA API: requests a recovery email via core's
@@ -26,6 +27,7 @@ final readonly class PasswordResetController
         private ResetService $resetService,
         private DataResponseFactoryInterface $responseFactory,
         private VoytiConfig $config,
+        private TranslatorInterface $translator,
     ) {}
 
     public function confirm(
@@ -38,13 +40,19 @@ final readonly class PasswordResetController
         string $password = '',
     ): ResponseInterface {
         if (!$this->config->allowPasswordRecovery && !$this->config->allowAdminPasswordRecovery) {
-            return $this->responseFactory->createResponse(['error' => 'Password reset is disabled.'], Status::FORBIDDEN);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti.recovery.reset_disabled', category: 'voyti')],
+                Status::FORBIDDEN,
+            );
         }
 
         $userToken = UserToken::findByUserIdAndCodeAndType($id, $code, UserToken::TYPE_RECOVERY);
 
         if ($userToken === null || $userToken->isExpired($this->config->tokenRecoveryLifespan) || $userToken->getUser() === null) {
-            return $this->responseFactory->createResponse(['error' => 'Reset link is invalid or expired.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti.recovery.link_invalid', category: 'voyti')],
+                Status::BAD_REQUEST,
+            );
         }
 
         /** @var User $user */
@@ -52,12 +60,14 @@ final readonly class PasswordResetController
 
         if (!$this->resetService->run($password, $user, $userToken)) {
             return $this->responseFactory->createResponse(
-                ['error' => 'This password has been used recently. Please choose a different one.'],
+                ['error' => $this->translator->translate('voyti.settings.password_previously_used', category: 'voyti')],
                 Status::BAD_REQUEST,
             );
         }
 
-        return $this->responseFactory->createResponse(['message' => 'Password changed.']);
+        return $this->responseFactory->createResponse(
+            ['message' => $this->translator->translate('voyti.recovery.password_changed', category: 'voyti')],
+        );
     }
 
     public function request(
@@ -65,7 +75,10 @@ final readonly class PasswordResetController
         string $email = '',
     ): ResponseInterface {
         if (!$this->config->allowPasswordRecovery) {
-            return $this->responseFactory->createResponse(['error' => 'Password reset is disabled.'], Status::FORBIDDEN);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti.recovery.disabled', category: 'voyti')],
+                Status::FORBIDDEN,
+            );
         }
 
         $result = $this->recoveryService->run($email);

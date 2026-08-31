@@ -76,6 +76,6 @@ final class SocialExchangeControllerTest extends DatabaseTestCase
 
     private function createController(): SocialExchangeController
     {
-        return new SocialExchangeController($this->apiTokenService, $this->responseFactory);
+        return new SocialExchangeController($this->apiTokenService, $this->responseFactory, $this->createTranslator());
     }
 }

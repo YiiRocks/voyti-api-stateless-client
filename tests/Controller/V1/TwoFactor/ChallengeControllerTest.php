@@ -94,6 +94,7 @@ final class ChallengeControllerTest extends DatabaseTestCase
             $this->backupCodeService,
             $this->responseFactory,
             new TwoFactorMethodRegistry([$this->fakeClientCollectedMethod()]),
+            $this->createTranslator(),
         );
         $request = (new ServerRequest('POST', 'https://example.com/v1/auth/challenge/verify'));
         self::assertSame($response, $controller->verify($request, challengeToken: $challengeToken, payload: 'expected-payload'));
@@ -133,6 +134,7 @@ final class ChallengeControllerTest extends DatabaseTestCase
             $this->backupCodeService,
             $this->responseFactory,
             new TwoFactorMethodRegistry([$this->fakeSilentMethod()]),
+            $this->createTranslator(),
         );
         self::assertSame($response, $controller->verify(new ServerRequest('POST', '/'), challengeToken: $challengeToken, code: 'wrong'));
     }
@@ -168,6 +170,7 @@ final class ChallengeControllerTest extends DatabaseTestCase
             $this->backupCodeService,
             $this->responseFactory,
             new TwoFactorMethodRegistry([$this->fakeMethod()]),
+            $this->createTranslator(),
         );
     }
 

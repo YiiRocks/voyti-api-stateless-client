@@ -29,6 +29,7 @@ use YiiRocks\Voyti\SocialAuth\Service\Auth\SocialAuthClientReturnUrlConfigurator
 use YiiRocks\Voyti\SocialAuth\Service\Auth\SocialUserAttributesNormalizer;
 use YiiRocks\Voyti\SocialAuth\Service\Auth\UserSocialAuthenticateService;
 use Yiisoft\Aliases\Aliases;
+use Yiisoft\DataResponse\ResponseFactory\DataResponseFactory;
 use Yiisoft\Router\CurrentRoute;
 use Yiisoft\Router\Route;
 use Yiisoft\Router\UrlGeneratorInterface;
@@ -86,7 +87,7 @@ final class ApiSocialAuthActionTest extends DatabaseTestCase
         $urlGenerator = $this->createStub(UrlGeneratorInterface::class);
         $mailService = new MailService(new MailCapture(), '/tmp', new View(), $this->createTranslator(), $urlGenerator, 'Test');
         $passwordHistoryService = new PasswordHistoryService($passwordHasher, $config);
-        $userCreationHelper = new UserCreationHelper($mailService, $eventDispatcher, $passwordHasher, $config, $passwordHistoryService);
+        $userCreationHelper = new UserCreationHelper($mailService, $eventDispatcher, $passwordHasher, $config, $passwordHistoryService, $this->createTranslator());
         $requestHolder = new AuthActionRequestHolder();
         $requestHolder->setRequest(new ServerRequest('GET', '/'));
         $loginCompletionService = new LoginCompletionService(
@@ -113,9 +114,10 @@ final class ApiSocialAuthActionTest extends DatabaseTestCase
         return new ApiSocialAuthCallbackService(
             $currentUser,
             new SocialUserAttributesNormalizer(),
-            new Psr17Factory(),
+            new DataResponseFactory(new Psr17Factory()),
             $redirectUrl,
             $socialAuthenticateService,
+            $this->createTranslator(),
         );
     }
 

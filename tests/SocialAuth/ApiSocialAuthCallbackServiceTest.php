@@ -30,6 +30,8 @@ use YiiRocks\Voyti\SocialAuth\Service\Auth\PendingSocialAccountService;
 use YiiRocks\Voyti\SocialAuth\Service\Auth\SocialUserAttributesNormalizer;
 use YiiRocks\Voyti\SocialAuth\Service\Auth\UserSocialAuthenticateService;
 use YiiRocks\Voyti\VoytiConfig;
+use Yiisoft\DataResponse\DataStream\DataStream;
+use Yiisoft\DataResponse\ResponseFactory\DataResponseFactory;
 use Yiisoft\Router\UrlGeneratorInterface;
 use Yiisoft\Security\PasswordHasher;
 use Yiisoft\Session\SessionInterface;
@@ -69,6 +71,11 @@ final class ApiSocialAuthCallbackServiceTest extends DatabaseTestCase
         $response = $this->createService('')->handleCancel($this->client('github'));
 
         self::assertSame(500, $response->getStatusCode());
+        self::assertInstanceOf(DataStream::class, $response->getBody());
+        self::assertSame(
+            ['error' => 'Social auth redirect URL is not configured.'],
+            $response->getBody()->getData(),
+        );
     }
 
     public function testHandleSuccessAlreadyAuthenticated(): void
@@ -149,7 +156,7 @@ final class ApiSocialAuthCallbackServiceTest extends DatabaseTestCase
         $responseFactory = new Psr17Factory();
         $mailService = new MailService(new MailCapture(), '/tmp', new View(), $this->createTranslator(), $url, 'Test');
         $passwordHistoryService = new PasswordHistoryService($this->passwordHasher, $this->config);
-        $userCreationHelper = new UserCreationHelper($mailService, $this->eventDispatcher, $this->passwordHasher, $this->config, $passwordHistoryService);
+        $userCreationHelper = new UserCreationHelper($mailService, $this->eventDispatcher, $this->passwordHasher, $this->config, $passwordHistoryService, $this->createTranslator());
         $requestHolder = new AuthActionRequestHolder();
         $requestHolder->setRequest(new ServerRequest('GET', '/'));
         $loginCompletionService = new LoginCompletionService(
@@ -178,9 +185,10 @@ final class ApiSocialAuthCallbackServiceTest extends DatabaseTestCase
         return new ApiSocialAuthCallbackService(
             $currentUser,
             new SocialUserAttributesNormalizer(),
-            $responseFactory,
+            new DataResponseFactory($responseFactory),
             $redirectUrl,
             $socialAuthenticateService,
+            $this->createTranslator(),
         );
     }
 

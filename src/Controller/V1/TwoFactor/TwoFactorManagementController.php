@@ -15,6 +15,7 @@ use YiiRocks\Voyti\TwoFactor\TwoFactorMethodRegistry;
 use Yiisoft\DataResponse\ResponseFactory\DataResponseFactoryInterface;
 use Yiisoft\Http\Status;
 use Yiisoft\Input\Http\Attribute\Parameter\Body;
+use Yiisoft\Translator\TranslatorInterface;
 use Yiisoft\User\CurrentUser;
 
 /**
@@ -35,6 +36,7 @@ final readonly class TwoFactorManagementController
         private DataResponseFactoryInterface $responseFactory,
         private TwoFactorDisableService $twoFactorDisableService,
         private TwoFactorMethodRegistry $twoFactorMethods,
+        private TranslatorInterface $translator,
     ) {}
 
     public function disable(
@@ -48,7 +50,10 @@ final readonly class TwoFactorManagementController
         $twoFactor = UserTwoFactor::forUser($user);
 
         if (!$twoFactor->isEnabled()) {
-            return $this->responseFactory->createResponse(['error' => 'Two-factor authentication is not enabled.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti-api-stateless-client.two_factor.not_enabled', category: 'voyti-api-stateless-client')],
+                Status::BAD_REQUEST,
+            );
         }
 
         $method = $this->resolveMethod($twoFactor->getMethod());
@@ -59,7 +64,9 @@ final readonly class TwoFactorManagementController
 
         $this->twoFactorDisableService->disable($user);
 
-        return $this->responseFactory->createResponse(['message' => 'Two-factor authentication disabled.']);
+        return $this->responseFactory->createResponse(
+            ['message' => $this->translator->translate('voyti-2fa.settings.two_factor_disabled', category: 'voyti-2fa')],
+        );
     }
 
     public function enable(
@@ -72,12 +79,23 @@ final readonly class TwoFactorManagementController
         $twoFactor = UserTwoFactor::forUser($user);
 
         if ($twoFactor->isEnabled()) {
-            return $this->responseFactory->createResponse(['error' => 'Two-factor authentication is already enabled.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti-api-stateless-client.two_factor.already_enabled', category: 'voyti-api-stateless-client')],
+                Status::BAD_REQUEST,
+            );
         }
 
         if (!$this->twoFactorMethods->has($method)) {
             if (!$this->twoFactorMethods->hasAvailable()) {
-                return $this->responseFactory->createResponse(['error' => 'No two-factor method is available.'], Status::BAD_REQUEST);
+                return $this->responseFactory->createResponse(
+                    [
+                        'error' => $this->translator->translate(
+                            'voyti-api-stateless-client.two_factor.no_method_available',
+                            category: 'voyti-api-stateless-client',
+                        ),
+                    ],
+                    Status::BAD_REQUEST,
+                );
             }
 
             $method = $this->twoFactorMethods->getDefault()->getName();
@@ -87,7 +105,12 @@ final readonly class TwoFactorManagementController
 
         if (!$twoFactorMethod->isCodeBased()) {
             return $this->responseFactory->createResponse(
-                ['error' => 'This method must be set up through its own endpoint.'],
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.two_factor.method_requires_own_endpoint',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
                 Status::BAD_REQUEST,
             );
         }
@@ -104,7 +127,10 @@ final readonly class TwoFactorManagementController
         $twoFactor->save();
 
         return $this->responseFactory->createResponse(
-            ['message' => 'Two-factor authentication enabled.', 'backupCodes' => $this->backupCodeService->generate($user)],
+            [
+                'message' => $this->translator->translate('voyti-2fa.settings.two_factor_enabled', category: 'voyti-2fa'),
+                'backupCodes' => $this->backupCodeService->generate($user),
+            ],
             Status::CREATED,
         );
     }
@@ -120,7 +146,10 @@ final readonly class TwoFactorManagementController
         $twoFactor = UserTwoFactor::forUser($user);
 
         if (!$twoFactor->isEnabled()) {
-            return $this->responseFactory->createResponse(['error' => 'Two-factor authentication is not enabled.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti-api-stateless-client.two_factor.not_enabled', category: 'voyti-api-stateless-client')],
+                Status::BAD_REQUEST,
+            );
         }
 
         $method = $this->resolveMethod($twoFactor->getMethod());
@@ -130,7 +159,10 @@ final readonly class TwoFactorManagementController
         }
 
         return $this->responseFactory->createResponse([
-            'message' => 'Backup codes regenerated.',
+            'message' => $this->translator->translate(
+                'voyti-api-stateless-client.two_factor.backup_codes_regenerated',
+                category: 'voyti-api-stateless-client',
+            ),
             'backupCodes' => $this->backupCodeService->generate($user),
         ]);
     }
@@ -167,7 +199,9 @@ final readonly class TwoFactorManagementController
     {
         $message = $method->getErrorMessage();
 
-        return $message !== '' ? $message : 'Invalid verification code.';
+        return $message !== ''
+            ? $message
+            : $this->translator->translate('voyti-2fa.validator.invalid_verification_code', category: 'voyti-2fa');
     }
 
     /**

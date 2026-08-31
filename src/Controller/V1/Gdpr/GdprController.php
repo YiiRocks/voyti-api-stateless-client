@@ -13,6 +13,7 @@ use Yiisoft\DataResponse\ResponseFactory\DataResponseFactoryInterface;
 use Yiisoft\Http\Status;
 use Yiisoft\Input\Http\Attribute\Parameter\Body;
 use Yiisoft\Security\PasswordHasher;
+use Yiisoft\Translator\TranslatorInterface;
 use Yiisoft\User\CurrentUser;
 
 /**
@@ -30,6 +31,7 @@ final readonly class GdprController
         private GdprExportService $gdprExportService,
         private PasswordHasher $passwordHasher,
         private DataResponseFactoryInterface $responseFactory,
+        private TranslatorInterface $translator,
     ) {}
 
     public function anonymize(
@@ -39,13 +41,18 @@ final readonly class GdprController
         $user = $this->currentUserOrFail();
 
         if (!$this->passwordHasher->validate($password, $user->getPasswordHash())) {
-            return $this->responseFactory->createResponse(['error' => 'Invalid password.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti.view.anonymize.invalid_password', category: 'voyti-gdpr')],
+                Status::BAD_REQUEST,
+            );
         }
 
         $this->anonymizeUserService->run($user);
         $this->apiTokenService->revokeAll($user);
 
-        return $this->responseFactory->createResponse(['message' => 'Account anonymized.']);
+        return $this->responseFactory->createResponse(
+            ['message' => $this->translator->translate('voyti.settings.personal_info_removed', category: 'voyti-gdpr')],
+        );
     }
 
     public function export(): ResponseInterface

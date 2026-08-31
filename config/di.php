@@ -9,6 +9,9 @@ use YiiRocks\Voyti\Api\StatelessClient\SocialAuth\ApiSocialAuthCallbackService;
 use YiiRocks\Voyti\SocialAuth\Service\Auth\UserSocialAuthenticateService;
 use YiiRocks\Voyti\TwoFactor\TwoFactorMethodInterface;
 use Yiisoft\Di\Reference\TagReference;
+use Yiisoft\Translator\CategorySource;
+use Yiisoft\Translator\Message\Php\MessageSource;
+use Yiisoft\Translator\SimpleMessageFormatter;
 
 /** @var array $params */
 
@@ -31,6 +34,16 @@ $definitions = [
         '__construct()' => [
             'postRegistrationHooks' => TagReference::to('voyti.post-registration-hook'),
         ],
+    ],
+
+    // Translation category source for this package's own message files.
+    'yiirocks/voyti-api-stateless-client.translator' => [
+        'definition' => static fn(): CategorySource => new CategorySource(
+            'voyti-api-stateless-client',
+            new MessageSource(dirname(__DIR__) . '/resources/messages'),
+            new SimpleMessageFormatter(),
+        ),
+        'tags' => ['translation.categorySource'],
     ],
 ];
 

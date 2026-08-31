@@ -66,6 +66,7 @@ final class EmailCodeControllerTest extends DatabaseTestCase
             $this->createCurrentUser($user),
             $this->responseFactory,
             new EmailCodeGeneratorService($this->mailCapture, $this->createTranslator()),
+            $this->createTranslator(),
         );
     }
 }

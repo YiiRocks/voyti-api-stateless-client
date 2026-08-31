@@ -1,6 +1,6 @@
 {
     "name": "yiirocks/voyti-api-stateless-client",
-    "description": "SPA-friendly JSON API for the Voyti ecosystem: credential login, account, RBAC admin, audit log, with dynamic 2FA/social-auth/GDPR bridges",
+    "description": "Stateless, SPA-friendly JSON API for the Voyti ecosystem: credential login, account, RBAC admin, audit log, with dynamic 2FA/social-auth/GDPR bridges",
     "type": "library",
     "keywords": [
         "yii",
@@ -42,13 +42,13 @@
         "psr/clock": "^1.0",
         "psr/event-dispatcher": "^1.0",
         "psr/http-message": "^1.0 || ^2.0",
-        "yiirocks/voyti": "^1.0",
         "yiirocks/voyti-api": "^1.0",
         "yiisoft/data-db": "^1.0",
         "yiisoft/data-response": "^2.2",
         "yiisoft/http": "^1.2",
         "yiisoft/input-http": "^1.0",
-        "yiisoft/router": "^4.0"
+        "yiisoft/router": "^4.0",
+        "yiisoft/translator-message-php": "^1.0"
     },
     "require-dev": {
         "ext-pdo_sqlite": "*",
@@ -58,7 +58,6 @@
         "phpunit/phpunit": "@stable",
         "rector/rector": "^2.1.1",
         "vimeo/psalm": "^6.0",
-        "yiirocks/voyti-2fa": "^1.0",
         "yiirocks/voyti-2fa-email": "^1.0",
         "yiirocks/voyti-2fa-totp": "^1.0",
         "yiirocks/voyti-2fa-webauthn": "^1.0",
@@ -69,7 +68,6 @@
         "yiisoft/db-sqlite": "^2.0",
         "yiisoft/dummy-provider": "^1.1",
         "yiisoft/mailer": "^6.1",
-        "yiisoft/translator-message-php": "^1.0",
         "yiisoft/view": "^12.0"
     },
     "suggest": {

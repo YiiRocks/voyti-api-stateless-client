@@ -71,7 +71,7 @@ final class WebauthnEnrollmentControllerTest extends DatabaseTestCase
         $this->webAuthn->createException = null;
         $this->webAuthn->createResult = $this->validCreateResult();
         $response = $this->expectResponse(
-            $this->callback(static fn(array $data): bool => $data['message'] === 'Two-factor authentication enabled.' && count($data['backupCodes']) === 10),
+            $this->callback(static fn(array $data): bool => $data['message'] === 'Two-factor authentication has been enabled' && count($data['backupCodes']) === 10),
             Status::CREATED,
         );
         self::assertSame($response, $this->createController($user)->finish(
@@ -126,6 +126,7 @@ final class WebauthnEnrollmentControllerTest extends DatabaseTestCase
             $this->createCurrentUser($user),
             $this->responseFactory,
             $webauthnService,
+            $this->createTranslator(),
         );
     }
 

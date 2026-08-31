@@ -55,16 +55,21 @@ final class SessionsControllerTest extends DatabaseTestCase
         $hash = hash('sha256', $rawToken);
 
         // Not found
-        $response = $this->expectResponse(['error' => 'Not found'], Status::NOT_FOUND);
+        $response = $this->expectResponse(['error' => 'Session not found'], Status::NOT_FOUND);
         self::assertSame($response, $this->createController($user)->terminate('not-a-real-hash'));
 
         // Success
-        $response = $this->expectResponse(['message' => 'Session terminated.'], Status::OK);
+        $response = $this->expectResponse(['message' => 'Session has been logged out'], Status::OK);
         self::assertSame($response, $this->createController($user)->terminate($hash));
     }
 
     private function createController(User $user): SessionsController
     {
-        return new SessionsController($this->apiTokenService, $this->createCurrentUser($user), $this->responseFactory);
+        return new SessionsController(
+            $this->apiTokenService,
+            $this->createCurrentUser($user),
+            $this->responseFactory,
+            $this->createTranslator(),
+        );
     }
 }

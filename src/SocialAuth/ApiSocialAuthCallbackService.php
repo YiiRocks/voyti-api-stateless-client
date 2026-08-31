@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace YiiRocks\Voyti\Api\StatelessClient\SocialAuth;
 
-use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use YiiRocks\Voyti\Api\StatelessClient\Controller\V1\SocialAuth\ApiSocialAuthAction;
 use YiiRocks\Voyti\Api\StatelessClient\Controller\V1\SocialAuth\SocialExchangeController;
@@ -13,9 +12,11 @@ use YiiRocks\Voyti\Model\UserToken;
 use YiiRocks\Voyti\SocialAuth\Service\Auth\SocialAuthCallbackService;
 use YiiRocks\Voyti\SocialAuth\Service\Auth\SocialUserAttributesNormalizer;
 use YiiRocks\Voyti\SocialAuth\Service\Auth\UserSocialAuthenticateService;
+use Yiisoft\DataResponse\ResponseFactory\DataResponseFactoryInterface;
 use Yiisoft\Http\Header;
 use Yiisoft\Http\Status;
 use Yiisoft\Security\Random;
+use Yiisoft\Translator\TranslatorInterface;
 use Yiisoft\User\CurrentUser;
 use Yiisoft\User\Guest\GuestIdentityInterface;
 use Yiisoft\Yii\AuthClient\AuthClientInterface;
@@ -47,9 +48,10 @@ final readonly class ApiSocialAuthCallbackService
     public function __construct(
         private CurrentUser $currentUser,
         private SocialUserAttributesNormalizer $normalizer,
-        private ResponseFactoryInterface $responseFactory,
+        private DataResponseFactoryInterface $responseFactory,
         private string $redirectUrl,
         private UserSocialAuthenticateService $socialAuthenticateService,
+        private TranslatorInterface $translator,
     ) {}
 
     public function handleCancel(AuthClientInterface $client): ResponseInterface
@@ -98,12 +100,20 @@ final readonly class ApiSocialAuthCallbackService
     private function redirect(array $query): ResponseInterface
     {
         if ($this->redirectUrl === '') {
-            return $this->responseFactory->createResponse(Status::INTERNAL_SERVER_ERROR, 'Social auth redirect URL is not configured.');
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.social_auth.redirect_url_not_configured',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::INTERNAL_SERVER_ERROR,
+            );
         }
 
         $separator = str_contains($this->redirectUrl, '?') ? '&' : '?';
 
-        return $this->responseFactory->createResponse(Status::FOUND)
+        return $this->responseFactory->createResponse(null, Status::FOUND)
             ->withHeader(Header::LOCATION, $this->redirectUrl . $separator . http_build_query($query));
     }
 }

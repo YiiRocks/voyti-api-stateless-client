@@ -11,6 +11,7 @@ use YiiRocks\Voyti\Model\UserToken;
 use Yiisoft\DataResponse\ResponseFactory\DataResponseFactoryInterface;
 use Yiisoft\Http\Status;
 use Yiisoft\Router\HydratorAttribute\RouteArgument;
+use Yiisoft\Translator\TranslatorInterface;
 use Yiisoft\User\CurrentUser;
 
 /**
@@ -27,6 +28,7 @@ final readonly class SessionsController
         private ApiTokenService $apiTokenService,
         private CurrentUser $currentUser,
         private DataResponseFactoryInterface $responseFactory,
+        private TranslatorInterface $translator,
     ) {}
 
     public function index(): ResponseInterface
@@ -47,10 +49,15 @@ final readonly class SessionsController
     public function terminate(#[RouteArgument] string $id): ResponseInterface
     {
         if (!$this->apiTokenService->revokeByHash($this->currentUserOrFail(), $id)) {
-            return $this->responseFactory->createResponse(['error' => 'Not found'], Status::NOT_FOUND);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti.settings.session_not_found', category: 'voyti')],
+                Status::NOT_FOUND,
+            );
         }
 
-        return $this->responseFactory->createResponse(['message' => 'Session terminated.']);
+        return $this->responseFactory->createResponse(
+            ['message' => $this->translator->translate('voyti.settings.session_terminated', category: 'voyti')],
+        );
     }
 
     private function currentUserOrFail(): User

@@ -92,6 +92,7 @@ final class TotpSetupControllerTest extends DatabaseTestCase
             $this->createCurrentUser($user),
             $this->responseFactory,
             new QrCodeUriGeneratorService(VoytiConfigFactory::create()),
+            $this->createTranslator(),
         );
     }
 }

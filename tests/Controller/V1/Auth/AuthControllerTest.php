@@ -84,27 +84,27 @@ final class AuthControllerTest extends DatabaseTestCase
 
         // User not found
         $this->eventDispatcher = new EventCaptureDispatcher();
-        $response = $this->expectResponse(['error' => 'Invalid login or password.'], Status::UNAUTHORIZED);
+        $response = $this->expectResponse(['error' => 'Invalid login or password'], Status::UNAUTHORIZED);
         self::assertSame($response, $this->createController()->login(new ServerRequest('POST', '/'), login: 'nobody', password: $password));
         self::assertSame('user_not_found', $this->lastFailedLoginReason());
 
         // Invalid password
         $this->eventDispatcher = new EventCaptureDispatcher();
-        $response = $this->expectResponse(['error' => 'Invalid login or password.'], Status::UNAUTHORIZED);
+        $response = $this->expectResponse(['error' => 'Invalid login or password'], Status::UNAUTHORIZED);
         self::assertSame($response, $this->createController()->login(new ServerRequest('POST', '/'), login: 'loginuser', password: 'wrong'));
         self::assertSame('invalid_password', $this->lastFailedLoginReason());
 
         // Blocked account
         $this->eventDispatcher = new EventCaptureDispatcher();
         $blocked = $this->createUser('blockeduser', 'blocked@example.com', $this->passwordHasher->hash($password), confirmedAt: time(), blockedAt: time());
-        $response = $this->expectResponse(['error' => 'Account is blocked.'], Status::FORBIDDEN);
+        $response = $this->expectResponse(['error' => 'Your account has been blocked'], Status::FORBIDDEN);
         self::assertSame($response, $this->createController()->login(new ServerRequest('POST', '/'), login: 'blockeduser', password: $password));
         self::assertSame('account_blocked', $this->lastFailedLoginReason());
 
         // Email confirmation required (no FailedLoginEvent dispatched, matching core's SessionController)
         $this->eventDispatcher = new EventCaptureDispatcher();
         $unconfirmed = $this->createUser('unconfirmeduser', 'unconfirmed@example.com', $this->passwordHasher->hash($password));
-        $response = $this->expectResponse(['error' => 'Email confirmation required.'], Status::FORBIDDEN);
+        $response = $this->expectResponse(['error' => 'You need to confirm your email address'], Status::FORBIDDEN);
         self::assertSame($response, $this->createController()->login(new ServerRequest('POST', '/'), login: 'unconfirmeduser', password: $password));
         self::assertFalse($this->eventDispatcher->hasEvent(FailedLoginEvent::class));
 
@@ -192,6 +192,7 @@ final class AuthControllerTest extends DatabaseTestCase
             $loginChallenges,
             $this->passwordHasher,
             $this->config,
+            $this->createTranslator(),
         );
     }
 

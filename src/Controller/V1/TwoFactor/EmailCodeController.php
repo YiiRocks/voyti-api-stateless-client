@@ -10,6 +10,7 @@ use YiiRocks\Voyti\TwoFactor\Email\Service\EmailCodeGeneratorService;
 use YiiRocks\Voyti\TwoFactor\Model\UserTwoFactor;
 use Yiisoft\DataResponse\ResponseFactory\DataResponseFactoryInterface;
 use Yiisoft\Http\Status;
+use Yiisoft\Translator\TranslatorInterface;
 use Yiisoft\User\CurrentUser;
 
 /**
@@ -24,6 +25,7 @@ final readonly class EmailCodeController
         private CurrentUser $currentUser,
         private DataResponseFactoryInterface $responseFactory,
         private EmailCodeGeneratorService $emailCodeGeneratorService,
+        private TranslatorInterface $translator,
     ) {}
 
     public function sendCode(): ResponseInterface
@@ -31,12 +33,25 @@ final readonly class EmailCodeController
         $user = $this->currentUserOrFail();
 
         if (UserTwoFactor::forUser($user)->isEnabled()) {
-            return $this->responseFactory->createResponse(['error' => 'Two-factor authentication is already enabled.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.two_factor.already_enabled',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         $this->emailCodeGeneratorService->run($user);
 
-        return $this->responseFactory->createResponse(['message' => 'Verification code sent.']);
+        return $this->responseFactory->createResponse([
+            'message' => $this->translator->translate(
+                'voyti-api-stateless-client.two_factor.verification_code_sent',
+                category: 'voyti-api-stateless-client',
+            ),
+        ]);
     }
 
     private function currentUserOrFail(): User

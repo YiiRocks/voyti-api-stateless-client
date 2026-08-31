@@ -55,7 +55,7 @@ final class RegistrationControllerTest extends DatabaseTestCase
         $rawCode = $userTokenFactory->makeConfirmationToken((int) $unconfirmedUser->getId());
 
         // User not found
-        $response = $this->expectResponse(['error' => 'Invalid confirmation link.'], Status::BAD_REQUEST);
+        $response = $this->expectResponse(['error' => 'Invalid confirmation link'], Status::BAD_REQUEST);
         self::assertSame($response, $this->createController()->confirm(999999, 'anycode'));
 
         // Already confirmed
@@ -63,7 +63,7 @@ final class RegistrationControllerTest extends DatabaseTestCase
         self::assertSame($response, $this->createController()->confirm((int) $confirmedUser->getId(), 'anycode'));
 
         // Invalid code
-        $response = $this->expectResponse(['error' => 'Confirmation link is invalid or expired.'], Status::BAD_REQUEST);
+        $response = $this->expectResponse(['error' => 'The confirmation link is invalid or expired.'], Status::BAD_REQUEST);
         self::assertSame($response, $this->createController()->confirm((int) $unconfirmedUser->getId(), 'wrong-code'));
 
         // Valid code
@@ -76,7 +76,7 @@ final class RegistrationControllerTest extends DatabaseTestCase
     {
         // Registration disabled
         $disabledConfig = VoytiConfigFactory::create(enableRegistration: false);
-        $response = $this->expectResponse(['error' => 'Registration is disabled.'], Status::FORBIDDEN);
+        $response = $this->expectResponse(['error' => 'Registration is disabled'], Status::FORBIDDEN);
         self::assertSame(
             $response,
             $this->createController($disabledConfig)->register(new ServerRequest('POST', '/'), username: 'a', email: 'a@example.com', password: 'password123'),
@@ -124,7 +124,7 @@ final class RegistrationControllerTest extends DatabaseTestCase
     {
         // Disabled
         $disabledConfig = VoytiConfigFactory::create(enableEmailConfirmation: false);
-        $response = $this->expectResponse(['error' => 'Email confirmation is disabled.'], Status::FORBIDDEN);
+        $response = $this->expectResponse(['error' => 'Email confirmation is disabled'], Status::FORBIDDEN);
         self::assertSame($response, $this->createController($disabledConfig)->resend(email: 'anyone@example.com'));
 
         // Unknown address: same generic message, no enumeration
@@ -155,7 +155,7 @@ final class RegistrationControllerTest extends DatabaseTestCase
         $url = $this->createStub(UrlGeneratorInterface::class);
         $mailService = new MailService($this->mailer, '/tmp', new View(), $this->createTranslator(), $url, 'Test');
         $passwordHistoryService = new PasswordHistoryService($passwordHasher, $config);
-        $userCreationHelper = new UserCreationHelper($mailService, $eventDispatcher, $passwordHasher, $config, $passwordHistoryService);
+        $userCreationHelper = new UserCreationHelper($mailService, $eventDispatcher, $passwordHasher, $config, $passwordHistoryService, $this->createTranslator());
 
         return new RegistrationController(
             $config,

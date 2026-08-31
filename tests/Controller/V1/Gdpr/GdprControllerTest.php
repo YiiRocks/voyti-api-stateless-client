@@ -48,13 +48,18 @@ final class GdprControllerTest extends DatabaseTestCase
         $rawToken = $this->apiTokenService->generate($user);
 
         // Wrong password: no changes
-        $response = $this->expectResponse(['error' => 'Invalid password.'], Status::BAD_REQUEST);
+        // Asserts the raw, untranslated key rather than resolved text: the real fix lives on
+        // voyti-gdpr's `voyti.view.anonymize.invalid_password` (category 'voyti-gdpr'), which only
+        // exists on that package's main branch so far - no tagged release contains it yet, so this
+        // reflects what actually ships until voyti-gdpr cuts one. TODO: expect 'Incorrect password'
+        // once voyti-gdpr 1.0.3 is released.
+        $response = $this->expectResponse(['error' => 'voyti.view.anonymize.invalid_password'], Status::BAD_REQUEST);
         self::assertSame($response, $this->createController($user)->anonymize(password: 'wrong-password'));
         self::assertSame('anon@example.com', $user->getEmail());
         self::assertNotNull(UserToken::findByUserIdAndCodeAndType((int) $user->getId(), $rawToken, UserToken::TYPE_API_ACCESS));
 
         // Correct password: anonymizes and revokes every bearer token
-        $response = $this->expectResponse(['message' => 'Account anonymized.'], Status::OK);
+        $response = $this->expectResponse(['message' => 'Your account has been anonymized'], Status::OK);
         self::assertSame($response, $this->createController($user)->anonymize(password: 'correct-password'));
         self::assertNotSame('anon@example.com', $user->getEmail());
         self::assertTrue($user->isBlocked());
@@ -78,6 +83,7 @@ final class GdprControllerTest extends DatabaseTestCase
             new GdprExportService(['email', 'username']),
             $this->passwordHasher,
             $this->responseFactory,
+            $this->createTranslator(),
         );
     }
 }

@@ -16,6 +16,7 @@ use YiiRocks\Voyti\TwoFactor\TwoFactorMethodRegistry;
 use Yiisoft\DataResponse\ResponseFactory\DataResponseFactoryInterface;
 use Yiisoft\Http\Status;
 use Yiisoft\Input\Http\Attribute\Parameter\Body;
+use Yiisoft\Translator\TranslatorInterface;
 
 /**
  * Completes the 2FA step {@see ApiTwoFactorLoginChallenge} started: verifies the challenge token
@@ -31,6 +32,7 @@ final readonly class ChallengeController
         private BackupCodeService $backupCodeService,
         private DataResponseFactoryInterface $responseFactory,
         private TwoFactorMethodRegistry $twoFactorMethods,
+        private TranslatorInterface $translator,
     ) {}
 
     public function verify(
@@ -45,17 +47,41 @@ final readonly class ChallengeController
         $challenge = UserToken::findByCodeAndType($challengeToken, UserToken::TYPE_API_CHALLENGE);
 
         if ($challenge === null || $challenge->isExpired(ApiTwoFactorLoginChallenge::CHALLENGE_LIFESPAN)) {
-            return $this->responseFactory->createResponse(['error' => 'Challenge is invalid or expired.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.two_factor.challenge_invalid_or_expired',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         $user = $challenge->getUser();
         if ($user === null) {
-            return $this->responseFactory->createResponse(['error' => 'Challenge is invalid or expired.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.two_factor.challenge_invalid_or_expired',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         $methodName = UserTwoFactor::forUser($user)->getMethod();
         if (!$this->twoFactorMethods->has($methodName)) {
-            return $this->responseFactory->createResponse(['error' => 'Two-factor method is no longer available.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.two_factor.method_unavailable',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         $method = $this->twoFactorMethods->get((string) $methodName);
@@ -66,7 +92,11 @@ final readonly class ChallengeController
         if (!$verified) {
             $errorMessage = $method->getErrorMessage();
             return $this->responseFactory->createResponse(
-                ['error' => $errorMessage !== '' ? $errorMessage : 'Invalid verification code.'],
+                [
+                    'error' => $errorMessage !== ''
+                        ? $errorMessage
+                        : $this->translator->translate('voyti-2fa.validator.invalid_verification_code', category: 'voyti-2fa'),
+                ],
                 Status::UNAUTHORIZED,
             );
         }

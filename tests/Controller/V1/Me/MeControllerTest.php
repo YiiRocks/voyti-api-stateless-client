@@ -90,7 +90,7 @@ final class MeControllerTest extends DatabaseTestCase
             'username' => 'updateuser',
             'email' => 'update@example.com',
             'unconfirmedEmail' => null,
-            'message' => 'Account updated.',
+            'message' => 'Account has been updated',
         ], Status::OK);
         self::assertSame($response, $this->createController($user)->update(password: 'brand-new-password'));
 
@@ -100,7 +100,7 @@ final class MeControllerTest extends DatabaseTestCase
             'username' => 'renameduser',
             'email' => 'update@example.com',
             'unconfirmedEmail' => null,
-            'message' => 'Account updated.',
+            'message' => 'Account has been updated',
         ], Status::OK);
         self::assertSame($response, $this->createController($user)->update(username: 'renameduser'));
         self::assertSame('renameduser', $user->getUsername());
@@ -111,7 +111,7 @@ final class MeControllerTest extends DatabaseTestCase
             'username' => 'renameduser',
             'email' => 'update@example.com',
             'unconfirmedEmail' => 'new@example.com',
-            'message' => 'Account updated.',
+            'message' => 'Account has been updated',
         ], Status::OK);
         self::assertSame($response, $this->createController($user)->update(email: 'new@example.com'));
         self::assertSame('update@example.com', $user->getEmail());

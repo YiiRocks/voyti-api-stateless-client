@@ -11,6 +11,7 @@ use YiiRocks\Voyti\Model\UserToken;
 use Yiisoft\DataResponse\ResponseFactory\DataResponseFactoryInterface;
 use Yiisoft\Http\Status;
 use Yiisoft\Input\Http\Attribute\Parameter\Body;
+use Yiisoft\Translator\TranslatorInterface;
 
 /**
  * Trades the one-time code {@see ApiSocialAuthCallbackService} redirected the popup with for a real
@@ -22,6 +23,7 @@ final readonly class SocialExchangeController
     public function __construct(
         private ApiTokenService $apiTokenService,
         private DataResponseFactoryInterface $responseFactory,
+        private TranslatorInterface $translator,
     ) {}
 
     public function exchange(
@@ -31,12 +33,28 @@ final readonly class SocialExchangeController
         $exchangeToken = UserToken::findByCodeAndType($code, UserToken::TYPE_API_SOCIAL_EXCHANGE);
 
         if ($exchangeToken === null || $exchangeToken->isExpired(ApiSocialAuthCallbackService::EXCHANGE_LIFESPAN)) {
-            return $this->responseFactory->createResponse(['error' => 'Code is invalid or expired.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.social_auth.code_invalid_or_expired',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         $user = $exchangeToken->getUser();
         if ($user === null) {
-            return $this->responseFactory->createResponse(['error' => 'Code is invalid or expired.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.social_auth.code_invalid_or_expired',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         $exchangeToken->delete();

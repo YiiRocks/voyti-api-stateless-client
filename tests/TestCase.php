@@ -35,13 +35,28 @@ abstract class TestCase extends BaseTestCase
     protected function createTranslator(string $locale = 'en'): TranslatorInterface
     {
         $translator = new Translator($locale, null, 'voyti');
-        $translator->addCategorySources(
+        $categorySources = [
             new CategorySource(
                 'voyti',
                 new MessageSource(InstalledVersions::getInstallPath('yiirocks/voyti') . '/resources/messages'),
                 new SimpleMessageFormatter(),
             ),
-        );
+            new CategorySource(
+                'voyti-api-stateless-client',
+                new MessageSource(dirname(__DIR__) . '/resources/messages'),
+                new SimpleMessageFormatter(),
+            ),
+        ];
+
+        foreach (['yiirocks/voyti-2fa' => 'voyti-2fa', 'yiirocks/voyti-gdpr' => 'voyti-gdpr'] as $package => $category) {
+            $categorySources[] = new CategorySource(
+                $category,
+                new MessageSource(InstalledVersions::getInstallPath($package) . '/resources/messages'),
+                new SimpleMessageFormatter(),
+            );
+        }
+
+        $translator->addCategorySources(...$categorySources);
         return $translator;
     }
 }

@@ -21,6 +21,7 @@ use Yiisoft\Http\Header;
 use Yiisoft\Http\Status;
 use Yiisoft\Input\Http\Attribute\Parameter\Body;
 use Yiisoft\Security\PasswordHasher;
+use Yiisoft\Translator\TranslatorInterface;
 use Yiisoft\User\CurrentUser;
 
 /**
@@ -44,6 +45,7 @@ final readonly class AuthController
         private iterable $loginChallenges,
         private PasswordHasher $passwordHasher,
         private VoytiConfig $config,
+        private TranslatorInterface $translator,
     ) {}
 
     public function login(
@@ -59,7 +61,15 @@ final readonly class AuthController
             $this->eventDispatcher->dispatch(
                 new FailedLoginEvent($login !== '' ? $login : null, 'validation_failed', $serverParams),
             );
-            return $this->responseFactory->createResponse(['error' => 'Login and password are required.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.auth.login_password_required',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         $user = User::findByUsernameOrEmail($login);
@@ -73,21 +83,33 @@ final readonly class AuthController
 
         if ($user === null) {
             $this->eventDispatcher->dispatch(new FailedLoginEvent($login, 'user_not_found', $serverParams));
-            return $this->responseFactory->createResponse(['error' => 'Invalid login or password.'], Status::UNAUTHORIZED);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti.security.invalid_login', category: 'voyti')],
+                Status::UNAUTHORIZED,
+            );
         }
 
         if (!$this->passwordHasher->validate($password, $user->getPasswordHash())) {
             $this->eventDispatcher->dispatch(new FailedLoginEvent($login, 'invalid_password', $serverParams));
-            return $this->responseFactory->createResponse(['error' => 'Invalid login or password.'], Status::UNAUTHORIZED);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti.security.invalid_login', category: 'voyti')],
+                Status::UNAUTHORIZED,
+            );
         }
 
         if ($user->isBlocked()) {
             $this->eventDispatcher->dispatch(new FailedLoginEvent($login, 'account_blocked', $serverParams));
-            return $this->responseFactory->createResponse(['error' => 'Account is blocked.'], Status::FORBIDDEN);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti.security.account_blocked', category: 'voyti')],
+                Status::FORBIDDEN,
+            );
         }
 
         if ($this->config->enableEmailConfirmation && !$user->isConfirmed()) {
-            return $this->responseFactory->createResponse(['error' => 'Email confirmation required.'], Status::FORBIDDEN);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti.security.need_email_confirmation', category: 'voyti')],
+                Status::FORBIDDEN,
+            );
         }
 
         foreach ($this->loginChallenges as $loginChallenge) {
@@ -112,7 +134,9 @@ final readonly class AuthController
             $this->eventDispatcher->dispatch(new LogoutEvent($identity, ''));
         }
 
-        return $this->responseFactory->createResponse(['message' => 'Logged out']);
+        return $this->responseFactory->createResponse(
+            ['message' => $this->translator->translate('voyti.security.logged_out', category: 'voyti')],
+        );
     }
 
     private function extractBearerToken(ServerRequestInterface $request): ?string

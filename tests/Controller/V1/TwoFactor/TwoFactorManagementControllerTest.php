@@ -56,7 +56,7 @@ final class TwoFactorManagementControllerTest extends DatabaseTestCase
         self::assertSame($response, $this->createController($user)->disable(new ServerRequest('POST', '/'), code: 'wrong'));
 
         // A backup code also satisfies re-authentication
-        $response = $this->expectResponse(['message' => 'Two-factor authentication disabled.'], Status::OK);
+        $response = $this->expectResponse(['message' => 'Two-factor authentication has been disabled'], Status::OK);
         self::assertSame($response, $this->createController($user)->disable(new ServerRequest('POST', '/'), code: $codes[0]));
         self::assertFalse(UserTwoFactor::forUser($user)->isEnabled());
         self::assertFalse($this->backupCodeService->hasUnused($user));
@@ -73,7 +73,7 @@ final class TwoFactorManagementControllerTest extends DatabaseTestCase
         $controller = $this->createController($user, methods: [$this->fakeClientCollectedMethod()]);
         self::assertSame($response, $controller->disable($request, payload: 'wrong-payload'));
 
-        $response = $this->expectResponse(['message' => 'Two-factor authentication disabled.'], Status::OK);
+        $response = $this->expectResponse(['message' => 'Two-factor authentication has been disabled'], Status::OK);
         $controller = $this->createController($user, methods: [$this->fakeClientCollectedMethod()]);
         self::assertSame($response, $controller->disable($request, payload: 'expected-payload'));
     }
@@ -91,7 +91,7 @@ final class TwoFactorManagementControllerTest extends DatabaseTestCase
         $controller = $this->createController($user, methods: $methods);
         self::assertSame($response, $controller->disable(new ServerRequest('POST', '/'), code: 'correct-code'));
 
-        $response = $this->expectResponse(['message' => 'Two-factor authentication disabled.'], Status::OK);
+        $response = $this->expectResponse(['message' => 'Two-factor authentication has been disabled'], Status::OK);
         $controller = $this->createController($user, methods: $methods);
         self::assertSame($response, $controller->disable(new ServerRequest('POST', '/'), code: 'second-correct-code'));
     }
@@ -106,7 +106,7 @@ final class TwoFactorManagementControllerTest extends DatabaseTestCase
 
         // Unknown method name falls back to the default
         $response = $this->expectResponse(
-            $this->callback(static fn(array $data): bool => $data['message'] === 'Two-factor authentication enabled.' && count($data['backupCodes']) === 10),
+            $this->callback(static fn(array $data): bool => $data['message'] === 'Two-factor authentication has been enabled' && count($data['backupCodes']) === 10),
             Status::CREATED,
         );
         self::assertSame($response, $this->createController($user)->enable(method: 'unknown-method', code: 'correct-code'));
@@ -201,6 +201,7 @@ final class TwoFactorManagementControllerTest extends DatabaseTestCase
             $this->responseFactory,
             new TwoFactorDisableService($registry, $this->backupCodeService),
             $registry,
+            $this->createTranslator(),
         );
     }
 

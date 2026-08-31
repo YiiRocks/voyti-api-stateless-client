@@ -98,7 +98,7 @@ final readonly class MeController
             'username' => $user->getUsername(),
             'email' => $user->getEmail(),
             'unconfirmedEmail' => $user->getUnconfirmedEmail(),
-            'message' => 'Account updated.',
+            'message' => $this->translator->translate('voyti.admin.account_updated', category: 'voyti'),
         ]);
     }
 

@@ -17,6 +17,7 @@ use Yiisoft\Rbac\ManagerInterface;
 use Yiisoft\Rbac\Permission;
 use Yiisoft\Rbac\Role;
 use Yiisoft\Router\HydratorAttribute\RouteArgument;
+use Yiisoft\Translator\TranslatorInterface;
 use Yiisoft\User\CurrentUser;
 
 /**
@@ -37,6 +38,7 @@ final readonly class RbacController
         private ItemsValidator $itemsValidator,
         private ManagerInterface $manager,
         private DataResponseFactoryInterface $responseFactory,
+        private TranslatorInterface $translator,
     ) {}
 
     /**
@@ -56,11 +58,27 @@ final readonly class RbacController
         array $children = [],
     ): ResponseInterface {
         if (!$this->isValidName($name)) {
-            return $this->responseFactory->createResponse(['error' => 'Invalid or missing name.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.rbac.invalid_or_missing_name',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         if ($this->findItem($itemType, $name) !== null) {
-            return $this->responseFactory->createResponse(['error' => 'An item with this name already exists.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.rbac.name_already_exists',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         $childrenResult = $this->validateChildren($children);
@@ -83,7 +101,11 @@ final readonly class RbacController
         );
 
         return $this->responseFactory->createResponse(
-            ['name' => $name, 'description' => $description, 'message' => 'Item created.'],
+            [
+                'name' => $name,
+                'description' => $description,
+                'message' => $this->translator->translate('voyti.auth_item.created', category: 'voyti'),
+            ],
             Status::CREATED,
         );
     }
@@ -96,7 +118,10 @@ final readonly class RbacController
         string $name,
     ): ResponseInterface {
         if ($this->findItem($itemType, $name) === null) {
-            return $this->responseFactory->createResponse(['error' => 'Not found.'], Status::NOT_FOUND);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti.auth_item.not_found', category: 'voyti')],
+                Status::NOT_FOUND,
+            );
         }
 
         /** @infection-ignore-all ManagerInterface::removeRole() and removePermission() both delegate to removeItem(), so which branch runs is unobservable. */
@@ -109,7 +134,9 @@ final readonly class RbacController
             targetName: $name,
         );
 
-        return $this->responseFactory->createResponse(['message' => 'Item deleted.']);
+        return $this->responseFactory->createResponse(
+            ['message' => $this->translator->translate('voyti.auth_item.deleted', category: 'voyti')],
+        );
     }
 
     public function index(#[RouteArgument] string $itemType): ResponseInterface
@@ -151,16 +178,35 @@ final readonly class RbacController
     ): ResponseInterface {
         $existing = $this->findItem($itemType, $name);
         if ($existing === null) {
-            return $this->responseFactory->createResponse(['error' => 'Not found.'], Status::NOT_FOUND);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti.auth_item.not_found', category: 'voyti')],
+                Status::NOT_FOUND,
+            );
         }
 
         $resolvedName = $newName !== '' ? $newName : $name;
         if (!$this->isValidName($resolvedName)) {
-            return $this->responseFactory->createResponse(['error' => 'Invalid name.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.rbac.invalid_name',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         if ($resolvedName !== $name && $this->findItem($itemType, $resolvedName) !== null) {
-            return $this->responseFactory->createResponse(['error' => 'An item with this name already exists.'], Status::BAD_REQUEST);
+            return $this->responseFactory->createResponse(
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.rbac.name_already_exists',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                ],
+                Status::BAD_REQUEST,
+            );
         }
 
         $childrenResult = $this->validateChildren($children);
@@ -187,7 +233,13 @@ final readonly class RbacController
             context: ['previousName' => $name],
         );
 
-        return $this->responseFactory->createResponse(['name' => $resolvedName, 'description' => $description, 'message' => 'Item updated.']);
+        return $this->responseFactory->createResponse(
+            [
+                'name' => $resolvedName,
+                'description' => $description,
+                'message' => $this->translator->translate('voyti.auth_item.updated', category: 'voyti'),
+            ],
+        );
     }
 
     private function buildItem(string $itemType, string $name, string $description, string $rule): Role|Permission
@@ -217,7 +269,13 @@ final readonly class RbacController
 
         if (!$result->isValid()) {
             return $this->responseFactory->createResponse(
-                ['error' => 'Invalid children.', 'errors' => $result->getErrorMessages()],
+                [
+                    'error' => $this->translator->translate(
+                        'voyti-api-stateless-client.rbac.invalid_children',
+                        category: 'voyti-api-stateless-client',
+                    ),
+                    'errors' => $result->getErrorMessages(),
+                ],
                 Status::BAD_REQUEST,
             );
         }

@@ -54,23 +54,23 @@ final class PasswordResetControllerTest extends DatabaseTestCase
 
         // Disabled
         $disabledConfig = VoytiConfigFactory::create(allowPasswordRecovery: false, allowAdminPasswordRecovery: false);
-        $response = $this->expectResponse(['error' => 'Password reset is disabled.'], Status::FORBIDDEN);
+        $response = $this->expectResponse(['error' => 'Password reset is disabled'], Status::FORBIDDEN);
         self::assertSame(
             $response,
             $this->createController($disabledConfig)->confirm(id: (int) $user->getId(), code: $rawCode, password: 'new-password123'),
         );
 
         // Invalid code
-        $response = $this->expectResponse(['error' => 'Reset link is invalid or expired.'], Status::BAD_REQUEST);
+        $response = $this->expectResponse(['error' => 'Recovery link is invalid or expired'], Status::BAD_REQUEST);
         self::assertSame($response, $this->createController()->confirm(id: (int) $user->getId(), code: 'wrong-code', password: 'new-password123'));
 
         // Missing id (falls back to default 0, which can't match any real user token)
-        $response = $this->expectResponse(['error' => 'Reset link is invalid or expired.'], Status::BAD_REQUEST);
+        $response = $this->expectResponse(['error' => 'Recovery link is invalid or expired'], Status::BAD_REQUEST);
         self::assertSame($response, $this->createController()->confirm(code: $rawCode, password: 'new-password123'));
 
         // Token whose user has been deleted since (orphaned, not expired): still rejected
         $orphanToken = (new UserTokenFactory())->makeRecoveryToken(999999);
-        $response = $this->expectResponse(['error' => 'Reset link is invalid or expired.'], Status::BAD_REQUEST);
+        $response = $this->expectResponse(['error' => 'Recovery link is invalid or expired'], Status::BAD_REQUEST);
         self::assertSame($response, $this->createController()->confirm(id: 999999, code: $orphanToken, password: 'new-password123'));
 
         // Recently used password
@@ -84,7 +84,7 @@ final class PasswordResetControllerTest extends DatabaseTestCase
         );
 
         // Success
-        $response = $this->expectResponse(['message' => 'Password changed.'], Status::OK);
+        $response = $this->expectResponse(['message' => 'Password has been changed'], Status::OK);
         self::assertSame($response, $this->createController()->confirm(id: (int) $user->getId(), code: $rawCode, password: 'new-password123'));
         self::assertNull(UserToken::findByUserIdAndCodeAndType((int) $user->getId(), $rawCode, UserToken::TYPE_RECOVERY));
     }
@@ -92,7 +92,7 @@ final class PasswordResetControllerTest extends DatabaseTestCase
     public function testRequest(): void
     {
         // Disabled
-        $response = $this->expectResponse(['error' => 'Password reset is disabled.'], Status::FORBIDDEN);
+        $response = $this->expectResponse(['error' => 'Password recovery is disabled'], Status::FORBIDDEN);
         self::assertSame(
             $response,
             $this->createController(VoytiConfigFactory::create(allowPasswordRecovery: false))->request(email: 'anyone@example.com'),
@@ -121,6 +121,7 @@ final class PasswordResetControllerTest extends DatabaseTestCase
             new ResetService($config, $eventDispatcher, new PasswordHistoryService($this->passwordHasher, $config)),
             $this->responseFactory,
             $config,
+            $this->createTranslator(),
         );
     }
 }
