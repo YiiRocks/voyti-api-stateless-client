@@ -16,6 +16,7 @@ use YiiRocks\Voyti\Api\StatelessClient\tests\Support\ExpectsResponseTrait;
 use YiiRocks\Voyti\Api\StatelessClient\tests\Support\FakeTwoFactorMethod;
 use YiiRocks\Voyti\Api\StatelessClient\tests\Support\UserFactoryTrait;
 use YiiRocks\Voyti\Clock\SystemClock;
+use YiiRocks\Voyti\Event\Auth\FailedLoginEvent;
 use YiiRocks\Voyti\Model\UserToken;
 use YiiRocks\Voyti\TwoFactor\Service\BackupCodeService;
 use YiiRocks\Voyti\TwoFactor\TwoFactorMethodRegistry;
@@ -31,6 +32,7 @@ final class ChallengeControllerTest extends DatabaseTestCase
 
     private ApiTokenService $apiTokenService;
     private BackupCodeService $backupCodeService;
+    private EventCaptureDispatcher $eventDispatcher;
     private DataResponseFactoryInterface&MockObject $responseFactory;
 
     protected function setUp(): void
@@ -52,6 +54,7 @@ final class ChallengeControllerTest extends DatabaseTestCase
         // Invalid/unknown challenge token
         $response = $this->expectResponse(['error' => 'Challenge is invalid or expired.'], Status::BAD_REQUEST);
         self::assertSame($response, $this->createController()->verify(new ServerRequest('POST', '/'), challengeToken: 'wrong'));
+        $this->assertFailedVerificationRecorded();
 
         // Wrong code: the method's own error message is used verbatim
         $response = $this->expectResponse(['error' => 'Fake method error.'], Status::UNAUTHORIZED);
@@ -59,6 +62,7 @@ final class ChallengeControllerTest extends DatabaseTestCase
             $response,
             $this->createController()->verify(new ServerRequest('POST', '/'), challengeToken: $challengeToken, code: 'wrong-code'),
         );
+        $this->assertFailedVerificationRecorded();
 
         // Correct code: issues a real token and consumes the challenge
         $response = $this->expectResponse(
@@ -74,6 +78,7 @@ final class ChallengeControllerTest extends DatabaseTestCase
         // Reusing the (now-deleted) challenge token fails
         $response = $this->expectResponse(['error' => 'Challenge is invalid or expired.'], Status::BAD_REQUEST);
         self::assertSame($response, $this->createController()->verify(new ServerRequest('POST', '/'), challengeToken: $challengeToken, code: 'correct-code'));
+        $this->assertFailedVerificationRecorded();
     }
 
     public function testVerifyClientCollectedMethod(): void
@@ -98,6 +103,20 @@ final class ChallengeControllerTest extends DatabaseTestCase
         );
         $request = (new ServerRequest('POST', 'https://example.com/v1/auth/challenge/verify'));
         self::assertSame($response, $controller->verify($request, challengeToken: $challengeToken, payload: 'expected-payload'));
+    }
+
+    public function testVerifyFailureWithoutEventDispatcher(): void
+    {
+        $response = $this->expectResponse(['error' => 'Challenge is invalid or expired.'], Status::BAD_REQUEST);
+        $controller = new ChallengeController(
+            new ApiLoginCompletionService($this->apiTokenService, new EventCaptureDispatcher(), []),
+            $this->backupCodeService,
+            $this->responseFactory,
+            new TwoFactorMethodRegistry([$this->fakeMethod()]),
+            $this->createTranslator(),
+        );
+
+        self::assertSame($response, $controller->verify(new ServerRequest('POST', '/'), challengeToken: 'wrong'));
     }
 
     public function testVerifyFallsBackToBackupCode(): void
@@ -135,8 +154,10 @@ final class ChallengeControllerTest extends DatabaseTestCase
             $this->responseFactory,
             new TwoFactorMethodRegistry([$this->fakeSilentMethod()]),
             $this->createTranslator(),
+            $eventDispatcher,
         );
         self::assertSame($response, $controller->verify(new ServerRequest('POST', '/'), challengeToken: $challengeToken, code: 'wrong'));
+        self::assertTrue($eventDispatcher->hasEvent(FailedLoginEvent::class));
     }
 
     public function testVerifyMethodNoLongerAvailable(): void
@@ -149,6 +170,7 @@ final class ChallengeControllerTest extends DatabaseTestCase
 
         $response = $this->expectResponse(['error' => 'Two-factor method is no longer available.'], Status::BAD_REQUEST);
         self::assertSame($response, $this->createController()->verify(new ServerRequest('POST', '/'), challengeToken: $challengeToken));
+        $this->assertFailedVerificationRecorded();
     }
 
     public function testVerifyOrphanedChallengeToken(): void
@@ -159,18 +181,28 @@ final class ChallengeControllerTest extends DatabaseTestCase
 
         $response = $this->expectResponse(['error' => 'Challenge is invalid or expired.'], Status::BAD_REQUEST);
         self::assertSame($response, $this->createController()->verify(new ServerRequest('POST', '/'), challengeToken: $orphanToken));
+        $this->assertFailedVerificationRecorded();
+    }
+
+    private function assertFailedVerificationRecorded(): void
+    {
+        /** @var ?FailedLoginEvent $event */
+        $event = $this->eventDispatcher->getEvent(FailedLoginEvent::class);
+        self::assertInstanceOf(FailedLoginEvent::class, $event);
+        self::assertSame('invalid_two_factor', $event->getReason());
     }
 
     private function createController(): ChallengeController
     {
-        $eventDispatcher = new EventCaptureDispatcher();
+        $this->eventDispatcher = new EventCaptureDispatcher();
 
         return new ChallengeController(
-            new ApiLoginCompletionService($this->apiTokenService, $eventDispatcher, []),
+            new ApiLoginCompletionService($this->apiTokenService, $this->eventDispatcher, []),
             $this->backupCodeService,
             $this->responseFactory,
             new TwoFactorMethodRegistry([$this->fakeMethod()]),
             $this->createTranslator(),
+            $this->eventDispatcher,
         );
     }
 

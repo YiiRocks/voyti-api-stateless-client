@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace YiiRocks\Voyti\Api\StatelessClient\Controller\V1\TwoFactor;
 
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use YiiRocks\Voyti\Api\StatelessClient\Auth\ApiTwoFactorLoginChallenge;
 use YiiRocks\Voyti\Api\StatelessClient\Service\ApiLoginCompletionService;
+use YiiRocks\Voyti\Event\Auth\FailedLoginEvent;
 use YiiRocks\Voyti\Model\User;
 use YiiRocks\Voyti\Model\UserToken;
 use YiiRocks\Voyti\TwoFactor\Model\UserTwoFactor;
@@ -33,6 +35,7 @@ final readonly class ChallengeController
         private DataResponseFactoryInterface $responseFactory,
         private TwoFactorMethodRegistry $twoFactorMethods,
         private TranslatorInterface $translator,
+        private ?EventDispatcherInterface $eventDispatcher = null,
     ) {}
 
     public function verify(
@@ -47,6 +50,7 @@ final readonly class ChallengeController
         $challenge = UserToken::findByCodeAndType($challengeToken, UserToken::TYPE_API_CHALLENGE);
 
         if ($challenge === null || $challenge->isExpired(ApiTwoFactorLoginChallenge::CHALLENGE_LIFESPAN)) {
+            $this->recordFailedVerification($request);
             return $this->responseFactory->createResponse(
                 [
                     'error' => $this->translator->translate(
@@ -60,6 +64,7 @@ final readonly class ChallengeController
 
         $user = $challenge->getUser();
         if ($user === null) {
+            $this->recordFailedVerification($request);
             return $this->responseFactory->createResponse(
                 [
                     'error' => $this->translator->translate(
@@ -73,6 +78,7 @@ final readonly class ChallengeController
 
         $methodName = UserTwoFactor::forUser($user)->getMethod();
         if (!$this->twoFactorMethods->has($methodName)) {
+            $this->recordFailedVerification($request);
             return $this->responseFactory->createResponse(
                 [
                     'error' => $this->translator->translate(
@@ -90,6 +96,7 @@ final readonly class ChallengeController
             : $method->verify($user, ['payload' => $payload, 'domain' => $request->getUri()->getHost()]);
 
         if (!$verified) {
+            $this->recordFailedVerification($request);
             $errorMessage = $method->getErrorMessage();
             return $this->responseFactory->createResponse(
                 [
@@ -101,9 +108,20 @@ final readonly class ChallengeController
             );
         }
 
-        $challenge->delete();
+        if (!$challenge->consume()) {
+            $this->recordFailedVerification($request);
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti-api-stateless-client.two_factor.challenge_invalid_or_expired', category: 'voyti-api-stateless-client')],
+                Status::BAD_REQUEST,
+            );
+        }
         $token = $this->apiLoginCompletionService->complete($user, $request);
 
         return $this->responseFactory->createResponse(['status' => 'ok', 'token' => $token]);
+    }
+
+    private function recordFailedVerification(ServerRequestInterface $request): void
+    {
+        $this->eventDispatcher?->dispatch(new FailedLoginEvent(null, 'invalid_two_factor', $request->getServerParams()));
     }
 }

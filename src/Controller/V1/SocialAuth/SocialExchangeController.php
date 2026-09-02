@@ -57,7 +57,12 @@ final readonly class SocialExchangeController
             );
         }
 
-        $exchangeToken->delete();
+        if (!$exchangeToken->consume()) {
+            return $this->responseFactory->createResponse(
+                ['error' => $this->translator->translate('voyti-api-stateless-client.social_auth.code_invalid_or_expired', category: 'voyti-api-stateless-client')],
+                Status::BAD_REQUEST,
+            );
+        }
         $token = $this->apiTokenService->generate($user);
 
         return $this->responseFactory->createResponse(['status' => 'ok', 'token' => $token]);

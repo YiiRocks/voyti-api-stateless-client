@@ -136,7 +136,9 @@ trait DatabaseSetupTrait
                 "user_id" INTEGER NOT NULL PRIMARY KEY,
                 "enabled" boolean NOT NULL DEFAULT 0,
                 "secret" VARCHAR(255),
-                "method" VARCHAR(64)
+                "method" VARCHAR(64),
+                "secret_created_at" INTEGER,
+                "secret_attempts" INTEGER NOT NULL DEFAULT 0
             )
         ')->execute();
 
