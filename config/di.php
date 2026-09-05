@@ -5,6 +5,7 @@ declare(strict_types=1);
 use YiiRocks\Voyti\Api\StatelessClient\Auth\ApiTwoFactorLoginChallenge;
 use YiiRocks\Voyti\Api\StatelessClient\Controller\V1\Auth\AuthController;
 use YiiRocks\Voyti\Api\StatelessClient\Controller\V1\Registration\RegistrationController;
+use YiiRocks\Voyti\Api\StatelessClient\OpenApi\StatelessClientOpenApiSpecContributor;
 use YiiRocks\Voyti\Api\StatelessClient\SocialAuth\ApiSocialAuthCallbackService;
 use YiiRocks\Voyti\SocialAuth\Service\Auth\UserSocialAuthenticateService;
 use YiiRocks\Voyti\TwoFactor\TwoFactorMethodInterface;
@@ -16,6 +17,10 @@ use Yiisoft\Translator\SimpleMessageFormatter;
 /** @var array $params */
 
 $definitions = [
+    StatelessClientOpenApiSpecContributor::class => [
+        'class' => StatelessClientOpenApiSpecContributor::class,
+        'tags' => ['voyti-api.openapi-contributor'],
+    ],
     // 2FA login challenges: steps that may interrupt a successful password login before a bearer
     // token is issued (e.g. a two-factor step). The optional `voyti-2fa` bridge (once installed) tags
     // its challenge with `voyti-api.login-challenge`; AuthController consults them all, in

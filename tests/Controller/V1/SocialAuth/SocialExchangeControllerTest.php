@@ -74,6 +74,29 @@ final class SocialExchangeControllerTest extends DatabaseTestCase
         self::assertSame($response, $this->createController()->exchange(code: $rawCode));
     }
 
+    public function testExchangeRejectsCodeThatWasConsumedConcurrently(): void
+    {
+        $user = $this->createUser('concurrentexchange', 'concurrent-exchange@example.com');
+        $rawCode = 'raw-concurrent-exchange-code';
+        $exchangeToken = new UserToken();
+        $exchangeToken->setUserId((int) $user->getId());
+        $exchangeToken->setType(UserToken::TYPE_API_SOCIAL_EXCHANGE);
+        $exchangeToken->setCode(hash('sha256', $rawCode));
+        $exchangeToken->setCreatedAt(time());
+        $exchangeToken->save();
+
+        // Simulate another request winning the atomic delete between lookup and consumption.
+        $this->executeRawDatabaseCommand(
+            'CREATE TRIGGER ignore_social_exchange_consumption BEFORE DELETE ON user_token '
+            . 'WHEN OLD.type = ' . UserToken::TYPE_API_SOCIAL_EXCHANGE
+            . ' BEGIN SELECT RAISE(IGNORE); END;',
+        );
+
+        $response = $this->expectResponse(['error' => 'Code is invalid or expired.'], Status::BAD_REQUEST);
+        self::assertSame($response, $this->createController()->exchange(code: $rawCode));
+        self::assertNotNull(UserToken::findByUserIdAndCodeAndType((int) $user->getId(), $rawCode, UserToken::TYPE_API_SOCIAL_EXCHANGE));
+    }
+
     private function createController(): SocialExchangeController
     {
         return new SocialExchangeController($this->apiTokenService, $this->responseFactory, $this->createTranslator());

@@ -184,6 +184,28 @@ final class ChallengeControllerTest extends DatabaseTestCase
         $this->assertFailedVerificationRecorded();
     }
 
+    public function testVerifyRejectsChallengeThatWasConsumedConcurrently(): void
+    {
+        $user = $this->createUser('concurrentchallenge', 'concurrent-challenge@example.com');
+        $this->enableTwoFactor($user, 'fake');
+
+        $challengeToken = 'raw-concurrent-challenge';
+        $this->createChallengeToken((int) $user->getId(), $challengeToken);
+        $this->executeRawDatabaseCommand(
+            'CREATE TRIGGER ignore_api_challenge_consumption BEFORE DELETE ON user_token '
+            . 'WHEN OLD.type = ' . UserToken::TYPE_API_CHALLENGE
+            . ' BEGIN SELECT RAISE(IGNORE); END;',
+        );
+
+        $response = $this->expectResponse(['error' => 'Challenge is invalid or expired.'], Status::BAD_REQUEST);
+        self::assertSame(
+            $response,
+            $this->createController()->verify(new ServerRequest('POST', '/'), challengeToken: $challengeToken, code: 'correct-code'),
+        );
+        $this->assertFailedVerificationRecorded();
+        self::assertNotNull(UserToken::findByUserIdAndCodeAndType((int) $user->getId(), $challengeToken, UserToken::TYPE_API_CHALLENGE));
+    }
+
     private function assertFailedVerificationRecorded(): void
     {
         /** @var ?FailedLoginEvent $event */

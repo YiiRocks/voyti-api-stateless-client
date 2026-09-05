@@ -8,6 +8,7 @@ use Psr\SimpleCache\CacheInterface;
 use Yiisoft\Db\Cache\SchemaCache;
 use Yiisoft\Db\Connection\ConnectionInterface;
 use Yiisoft\Db\Connection\ConnectionProvider;
+use Yiisoft\Db\Driver\Pdo\AbstractPdoConnection;
 use Yiisoft\Db\Sqlite\Connection as SqliteConnection;
 use Yiisoft\Db\Sqlite\Driver;
 use Yiisoft\Db\Sqlite\Dsn;
@@ -200,5 +201,13 @@ trait DatabaseSetupTrait
         }
         ConnectionProvider::clear();
         $this->dbConnection = null;
+    }
+
+    /** Execute a multi-statement SQLite fixture command, such as a trigger definition. */
+    protected function executeRawDatabaseCommand(string $sql): void
+    {
+        if ($this->dbConnection instanceof AbstractPdoConnection) {
+            $this->dbConnection->getActivePdo()->exec($sql);
+        }
     }
 }
