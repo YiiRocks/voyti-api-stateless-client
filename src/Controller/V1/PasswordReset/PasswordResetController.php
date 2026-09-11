@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace YiiRocks\Voyti\Api\StatelessClient\Controller\V1\PasswordReset;
 
 use Psr\Http\Message\ResponseInterface;
+use YiiRocks\Voyti\Exception\PasswordPolicyViolationException;
 use YiiRocks\Voyti\Model\User;
 use YiiRocks\Voyti\Model\UserToken;
 use YiiRocks\Voyti\Service\Password\RecoveryService;
@@ -58,7 +59,16 @@ final readonly class PasswordResetController
         /** @var User $user */
         $user = $userToken->getUser();
 
-        if (!$this->resetService->run($password, $user, $userToken)) {
+        try {
+            $changed = $this->resetService->run($password, $user, $userToken);
+        } catch (PasswordPolicyViolationException $exception) {
+            return $this->responseFactory->createResponse(
+                ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
+                Status::BAD_REQUEST,
+            );
+        }
+
+        if (!$changed) {
             return $this->responseFactory->createResponse(
                 ['error' => $this->translator->translate('voyti.settings.password_previously_used', category: 'voyti')],
                 Status::BAD_REQUEST,

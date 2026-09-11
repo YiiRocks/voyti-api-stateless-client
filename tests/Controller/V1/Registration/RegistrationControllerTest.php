@@ -154,7 +154,7 @@ final class RegistrationControllerTest extends DatabaseTestCase
         $eventDispatcher = new EventCaptureDispatcher();
         $url = $this->createStub(UrlGeneratorInterface::class);
         $mailService = new MailService($this->mailer, '/tmp', new View(), $this->createTranslator(), $url, 'Test');
-        $passwordHistoryService = new PasswordHistoryService($passwordHasher, $config);
+        $passwordHistoryService = new PasswordHistoryService($passwordHasher, $config, $this->createTranslator());
         $userCreationHelper = new UserCreationHelper($mailService, $eventDispatcher, $passwordHasher, $config, $passwordHistoryService, $this->createTranslator());
 
         return new RegistrationController(

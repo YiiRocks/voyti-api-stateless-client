@@ -83,6 +83,14 @@ final class PasswordResetControllerTest extends DatabaseTestCase
             $this->createController(VoytiConfigFactory::create(maxPasswordAge: 90))->confirm(id: (int) $user->getId(), code: $rawCode, password: 'old-password'),
         );
 
+        // Password policy violation
+        $error = 'Password must contain at least 6 characters.';
+        $response = $this->expectResponse(['error' => $error, 'errors' => [$error]], Status::BAD_REQUEST);
+        self::assertSame(
+            $response,
+            $this->createController()->confirm(id: (int) $user->getId(), code: $rawCode, password: 'x'),
+        );
+
         // Success
         $response = $this->expectResponse(['message' => 'Password has been changed'], Status::OK);
         self::assertSame($response, $this->createController()->confirm(id: (int) $user->getId(), code: $rawCode, password: 'new-password123'));
@@ -118,7 +126,11 @@ final class PasswordResetControllerTest extends DatabaseTestCase
 
         return new PasswordResetController(
             new RecoveryService(new UserTokenFactory(), $mailService, $config, $this->createTranslator()),
-            new ResetService($config, $eventDispatcher, new PasswordHistoryService($this->passwordHasher, $config)),
+            new ResetService(
+                $config,
+                $eventDispatcher,
+                new PasswordHistoryService($this->passwordHasher, $config, $this->createTranslator()),
+            ),
             $this->responseFactory,
             $config,
             $this->createTranslator(),

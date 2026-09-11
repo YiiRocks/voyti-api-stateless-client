@@ -155,7 +155,11 @@ final class ApiSocialAuthCallbackServiceTest extends DatabaseTestCase
         $url = $this->createStub(UrlGeneratorInterface::class);
         $responseFactory = new Psr17Factory();
         $mailService = new MailService(new MailCapture(), '/tmp', new View(), $this->createTranslator(), $url, 'Test');
-        $passwordHistoryService = new PasswordHistoryService($this->passwordHasher, $this->config);
+        $passwordHistoryService = new PasswordHistoryService(
+            $this->passwordHasher,
+            $this->config,
+            $this->createTranslator(),
+        );
         $userCreationHelper = new UserCreationHelper($mailService, $this->eventDispatcher, $this->passwordHasher, $this->config, $passwordHistoryService, $this->createTranslator());
         $requestHolder = new AuthActionRequestHolder();
         $requestHolder->setRequest(new ServerRequest('GET', '/'));
