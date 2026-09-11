@@ -6,6 +6,7 @@ namespace YiiRocks\Voyti\Api\StatelessClient\Controller\V1\Me;
 
 use Psr\Http\Message\ResponseInterface;
 use YiiRocks\Voyti\Exception\ActionPreventedException;
+use YiiRocks\Voyti\Exception\PasswordPolicyViolationException;
 use YiiRocks\Voyti\Model\Form\Settings\SettingsForm;
 use YiiRocks\Voyti\Model\User;
 use YiiRocks\Voyti\Service\EmailChangeService;
@@ -88,6 +89,11 @@ final readonly class MeController
                     }
                 },
                 $password,
+            );
+        } catch (PasswordPolicyViolationException $exception) {
+            return $this->responseFactory->createResponse(
+                ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
+                Status::BAD_REQUEST,
             );
         } catch (ActionPreventedException $exception) {
             return $this->responseFactory->createResponse(['error' => $exception->getMessage()], Status::BAD_REQUEST);

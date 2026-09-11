@@ -84,6 +84,16 @@ final class MeControllerTest extends DatabaseTestCase
             $this->createController($user, VoytiConfigFactory::create(maxPasswordAge: 90))->update(password: 'old-password'),
         );
 
+        // Password policy violations are returned as validation errors.
+        $response = $this->expectResponse(
+            [
+                'error' => 'Password must contain at least 6 characters.',
+                'errors' => ['Password must contain at least 6 characters.'],
+            ],
+            Status::BAD_REQUEST,
+        );
+        self::assertSame($response, $this->createController($user)->update(password: 'x'));
+
         // New, not-previously-used password: proceeds (kills LogicalAnd -> LogicalOr on the guard above)
         $response = $this->expectResponse([
             'id' => $user->getId(),
@@ -135,8 +145,12 @@ final class MeControllerTest extends DatabaseTestCase
             $config,
             $this->createCurrentUser($user),
             new EmailChangeService($config, new UserTokenFactory(), $mailService),
-            new PasswordHistoryService($this->passwordHasher, $config),
-            new UserUpdateHelper(new SystemClock(), $eventDispatcher, new PasswordHistoryService($this->passwordHasher, $config)),
+            new PasswordHistoryService($this->passwordHasher, $config, $this->createTranslator()),
+            new UserUpdateHelper(
+                new SystemClock(),
+                $eventDispatcher,
+                new PasswordHistoryService($this->passwordHasher, $config, $this->createTranslator()),
+            ),
             $this->responseFactory,
             $this->createTranslator(),
         );

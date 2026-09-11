@@ -86,7 +86,7 @@ final class ApiSocialAuthActionTest extends DatabaseTestCase
         $session = $this->createStub(SessionInterface::class);
         $urlGenerator = $this->createStub(UrlGeneratorInterface::class);
         $mailService = new MailService(new MailCapture(), '/tmp', new View(), $this->createTranslator(), $urlGenerator, 'Test');
-        $passwordHistoryService = new PasswordHistoryService($passwordHasher, $config);
+        $passwordHistoryService = new PasswordHistoryService($passwordHasher, $config, $this->createTranslator());
         $userCreationHelper = new UserCreationHelper($mailService, $eventDispatcher, $passwordHasher, $config, $passwordHistoryService, $this->createTranslator());
         $requestHolder = new AuthActionRequestHolder();
         $requestHolder->setRequest(new ServerRequest('GET', '/'));
