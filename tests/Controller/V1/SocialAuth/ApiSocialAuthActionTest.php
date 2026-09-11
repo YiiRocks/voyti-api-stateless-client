@@ -21,6 +21,7 @@ use YiiRocks\Voyti\Clock\SystemClock;
 use YiiRocks\Voyti\Service\Auth\LoginCompletionService;
 use YiiRocks\Voyti\Service\MailService;
 use YiiRocks\Voyti\Service\Password\PasswordHistoryService;
+use YiiRocks\Voyti\Service\Password\RandomPasswordGenerator;
 use YiiRocks\Voyti\Service\RememberMeCookieService;
 use YiiRocks\Voyti\Service\User\UserCreationHelper;
 use YiiRocks\Voyti\SocialAuth\Http\AuthActionRequestHolder;
@@ -87,6 +88,7 @@ final class ApiSocialAuthActionTest extends DatabaseTestCase
         $urlGenerator = $this->createStub(UrlGeneratorInterface::class);
         $mailService = new MailService(new MailCapture(), '/tmp', new View(), $this->createTranslator(), $urlGenerator, 'Test');
         $passwordHistoryService = new PasswordHistoryService($passwordHasher, $config, $this->createTranslator());
+        $passwordGenerator = new RandomPasswordGenerator($config);
         $userCreationHelper = new UserCreationHelper($mailService, $eventDispatcher, $passwordHasher, $config, $passwordHistoryService, $this->createTranslator());
         $requestHolder = new AuthActionRequestHolder();
         $requestHolder->setRequest(new ServerRequest('GET', '/'));
@@ -105,6 +107,7 @@ final class ApiSocialAuthActionTest extends DatabaseTestCase
             true,
             $requestHolder,
             $loginCompletionService,
+            $passwordGenerator,
             $session,
             $userCreationHelper,
             new PendingSocialAccountService($session, false),
